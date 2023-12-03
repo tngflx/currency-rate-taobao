@@ -1,0 +1,36 @@
+.body-section{
+    min-width: 200px;
+    padding: 1em; 
+}
+.setting-section{
+
+}
+.setting-section .setting-section-label{
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 14px;
+}
+.setting-section .setting-section-value{
+    display: inline-block;
+    vertical-align: middle;
+    margin-left:1em;
+}
+.setting-section .setting-section-value select{
+    min-width: 160px;
+    box-shadow: 0 2px 6px 0 rgb(0 0 0 / 20%);
+    padding: 6px 2px;
+    background-color: #f40;
+    color: #fff;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    border-radius: 3px;
+    margin: 0.5em auto;
+    border: 10px solid #f40;
+}
+.footer-section{
+    margin-top:1rem;
+    padding-top:1rem;
+    font-size: 13px;
+    border-top:1px solid #eee;
+}

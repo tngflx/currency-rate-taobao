@@ -1,0 +1,26 @@
+{
+  "action": {
+    "default_icon": "/resources/icon-32.png",
+    "default_popup": "popup.html",
+    "default_title": "Taobao Currency"
+  },
+  "content_scripts": [
+    {
+      "css": [ "/resources/taobao_currency.css" ],
+      "js": [ "/scripts/jquery.js", "/scripts/content.js"],
+      "matches": [ "https://world.taobao.com/*", "https://s.taobao.com/*", "https://item.taobao.com/*", "https://detail.tmall.com/*" ]
+    }
+  ],
+  "description": "Convert Taobao prices into any currency according to the current international exchange rate.",
+  "icons": {
+    "128": "/resources/icon-128.png",
+    "16": "/resources/icon-16.png",
+    "32": "/resources/icon-32.png",
+    "48": "/resources/icon-48.png"
+  },
+  "manifest_version": 3,
+  "name": "Currency rate taobao",
+  "permissions": [ "storage" ],
+  "update_url": "https://clients2.google.com/service/update2/crx",
+  "version": "0.1"
+}
