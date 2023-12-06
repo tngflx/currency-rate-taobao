@@ -1,4 +1,4 @@
-.taobao_currency_modified_tag{
+.taoconvert_modified_tag{
     display:table;
     border: 1px dashed #ee4f4f;
     background: #fadddd;
@@ -10,7 +10,7 @@
     border-radius: 2px;
     line-height: 1;
 }
-.taobao_currency_modified_tag i{
+.taoconvert_modified_tag i{
     display: table-cell;
     vertical-align: middle;
     width: 22px;
@@ -21,25 +21,25 @@
     background-size: 22px;
     padding-right: 10px;
 }
-.taobao_currency_modified_tag img{
+.taoconvert_modified_tag img{
     display: table-cell;
     vertical-align: middle;
     width: 49px;
     height: 24px;
     padding-right: 10px;
 }
-.taobao_currency_modified_tag span{
+.taoconvert_modified_tag span{
     display: table-cell;
     vertical-align: middle;
     padding-right: 6px;
     font-size: 14px!important;
     color: #ee4f4f!important;
 }
-.tm-price-panel .taobao_currency_modified_tag span{
+.tm-price-panel .taoconvert_modified_tag span{
   
 }
 
-.taobao_currency_modified_tag.min{
+.taoconvert_modified_tag.min{
     display:inline-block;
     border: 1px dashed #ee4f4f;
     background: #fadddd;
@@ -51,8 +51,8 @@
     margin-left:5px;
     transform: scale(0.85);
 }
-.taobao_currency_modified_tag.min i{
-    display:inline-block;
+.taoconvert_modified_tag.min i {
+    display: inline-block;
     vertical-align: middle;
     width: 18px;
     height: 18px;
@@ -60,14 +60,14 @@
     padding-right: 6px;
     background-position: left center;
 }
-.taobao_currency_modified_tag.min span{
+.taoconvert_modified_tag.min span{
     display:inline-block;
     vertical-align: middle;
     padding-right: 0;
     font-size: 13px!important;
     color: #ee4f4f!important;
 }
-.this_is_taobao_currency_price_dom span,.this_is_taobao_currency_price_dom strong{
+.taoconvert_pricebox_container span, .taoconvert_pricebox_container strong {
     display: inline-block;
     vertical-align: middle;
 }

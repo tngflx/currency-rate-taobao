@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{846d1a4d-7fb7-439f-b508-50b9e5f52f36}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <ProjectView>ShowAllFiles</ProjectView>
+    <ProjectView>ProjectFiles</ProjectView>
     <StartupFile>scripts\testapi.js</StartupFile>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -34,8 +34,8 @@
     <Content Include="scripts\jquery.js" />
     <Content Include="scripts\popup.js" />
     <Content Include="scripts\testapi.js" />
-    <Content Include="old files\resources\common.css" />
-    <Content Include="old files\resources\taobao_currency.css" />
+    <Content Include="old files\resources\common_old.css" />
+    <Content Include="old files\resources\taobao_currency_old.css" />
     <Content Include="old files\resources\icon-128.png" />
     <Content Include="old files\resources\icon-16.png" />
     <Content Include="old files\resources\icon-32.png" />
