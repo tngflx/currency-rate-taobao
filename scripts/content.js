@@ -84,13 +84,15 @@ class MutationObserverManager {
         const observer = new MutationObserver((mutationsList, observer) => {
             switch (mode) {
                 case 'addedNode':
-                    this.foundTargetNode = mutationsList.some(mutation =>
-                        mutation.type === 'childList' &&
-                        Array.from(mutation.addedNodes).some(node => {
-                            const className = mutation.target.className.toLowerCase();
-                            return /*className.includes(mutatedTargetChildNode) &&*/ mutation.addedNodes.length > 0
-                        })
-                    );
+                    this.foundTargetNode = mutationsList.some(mutation => {
+
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            return Array.from(mutation.addedNodes).some(node =>
+                                sharedUtility.checkClassNameInChildEl(node, mutatedTargetChildNode)
+                            );
+                        }
+                        return false;
+                    });
 
                     this.stopObserverBeforeDomChanges(observer, callback)
                     break;
@@ -98,9 +100,10 @@ class MutationObserverManager {
                 case 'removedNode':
                     this.foundTargetNode = mutationsList.some(mutation =>
                         mutation.type === 'childList' &&
-                        Array.from(mutation.removedNodes).some(node =>
-                            node.classList && node.classList.contains(mutatedTargetChildNode)
-                        )
+                        Array.from(mutation.removedNodes).some(node => {
+                            const man = node.classList.contains(mutatedTargetChildNode)
+                            node.classList && man
+                        })
                     );
 
                     this.stopObserverBeforeDomChanges(observer, callback)
@@ -129,7 +132,7 @@ class MutationObserverManager {
 
     stopObserverBeforeDomChanges(observer, callback) {
         observer.disconnect()
-        document.querySelectorAll('.taoconvert_pricebox_tag').forEach(tag => tag.remove());
+        //document.querySelectorAll('.taoconvert_pricebox_tag').forEach(tag => tag.remove());
 
         if (this.foundTargetNode) {
             callback()
@@ -190,7 +193,7 @@ class sharedUtilities {
      * @param {any} element_tag the tag u want to look for, example <div> <p>
      * @returns
      */
-    findElementbyClassName(element, class_name, element_tag) {
+    findParentElbyClassName(element, class_name, element_tag) {
         let lowerCaseClassName = class_name.toLowerCase();
         element_tag = element_tag || '*';
 
@@ -209,7 +212,19 @@ class sharedUtilities {
         return null; // Return null if no matching element is found in the ancestors
     }
 
+    checkClassNameInChildEl(node, className) {
+        if (node.className && typeof node.className === 'string' && node.className.includes(className)) {
+            return true;
+        }
 
+        if (node.childNodes.length > 0) {
+            return Array.from(node.childNodes).some(child =>
+                child.nodeType === 1 && this.checkClassNameInChildEl(child, className)
+            );
+        }
+
+        return false;
+    }
 
     createPriceBox(item_price_element, class_name) {
         const item_price = item_price_element.textContent
@@ -280,7 +295,7 @@ if (location.href.includes("https://s.taobao.com/")) {
     let adsPageDivToObserve = '[class*="templet"]'
 
     window.onload = (event) => {
-        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: "contentInner", mutatedTargetParentNode: searchResultPageDivToObserve }
+        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: "doubleCardWrapper", mutatedTargetParentNode: searchResultPageDivToObserve }
         mutObserverManager.startObserver(changeTaobaoSearchResultPagePriceTag)
 
         adsObserverManager = new MutationObserverManager();
@@ -296,10 +311,10 @@ if (location.href.includes("https://s.taobao.com/")) {
 
         for (let price_wrapper_element of price_wrapper_elements) {
             // get Price int and float using more generic selectors
-            let price_int_element = sharedUtility.findElementbyClassName(price_wrapper_element, 'priceInt')
+            let price_int_element = sharedUtility.findParentElbyClassName(price_wrapper_element, 'priceInt')
             if (!price_int_element) console.log('no element');
 
-            let price_float_element = sharedUtility.findElementbyClassName(price_wrapper_element, 'priceFloat')
+            let price_float_element = sharedUtility.findParentElbyClassName(price_wrapper_element, 'priceFloat')
             if (!price_float_element) console.log('no element');
 
             // Extract the text content of priceInt and priceFloat elements
@@ -320,7 +335,7 @@ if (location.href.includes("https://s.taobao.com/")) {
                 price_wrapper_element.style.height = "44px"
                 price_wrapper_element.style['align-items'] = "flex-start"
 
-                let priceSalesSpan = sharedUtility.findElementbyClassName(price_wrapper_element, 'realSales')
+                let priceSalesSpan = sharedUtility.findParentElbyClassName(price_wrapper_element, 'realSales')
                 priceSalesSpan.style["line-height"] = "20px"
 
                 price_wrapper_element.classList.add('taoconvert_pricebox_container')
@@ -335,8 +350,8 @@ if (location.href.includes("https://s.taobao.com/")) {
         let ads_price_wrapper = document.querySelectorAll('.templet ul li');
 
         for (let item of ads_price_wrapper) {
-            const ad_price_element = sharedUtility.findElementbyClassName(item, 'price', 'a')
-            const ad_price_wrapper_element = sharedUtility.findElementbyClassName(item, 'line1', 'div')
+            const ad_price_element = sharedUtility.findParentElbyClassName(item, 'price', 'a')
+            const ad_price_wrapper_element = sharedUtility.findParentElbyClassName(item, 'line1', 'div')
 
             if (!ad_price_element) {
                 console.error(`ad_price_element not found`);
@@ -415,8 +430,8 @@ if (urlPattern.test(location.href)) {
         let tmall_original_price_element;
 
         Array.from(tmall_price_elements).forEach(el => {
-            const discountedPriceElement = sharedUtility.findElementbyClassName(el, "extraPrice");
-            const originalPriceElement = sharedUtility.findElementbyClassName(el, "originPrice");
+            const discountedPriceElement = sharedUtility.findParentElbyClassName(el, "extraPrice");
+            const originalPriceElement = sharedUtility.findParentElbyClassName(el, "originPrice");
 
             if (discountedPriceElement) {
                 tmall_discounted_price_element = discountedPriceElement;

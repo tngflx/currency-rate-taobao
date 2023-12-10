@@ -1,5 +1,5 @@
 .taoconvert_pricebox_tag {
-    /*display: table;*/
+    display: table;
     border: 1px dashed black;
     background: rgb(201 255 118);
     font-size: 14px;
