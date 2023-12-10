@@ -7,8 +7,8 @@
   "content_scripts": [
     {
       "css": [ "/resources/taobao_currency.css" ],
-      "js": [ "/scripts/jquery.js", "/scripts/content.js"],
-      "matches": [ "https://world.taobao.com/*", "https://s.taobao.com/*", "https://item.taobao.com/*", "https://detail.tmall.com/*" ]
+      "js": [ "/scripts/content.js"],
+      "matches": [ "https://world.taobao.com/*", "https://s.taobao.com/*", "https://item.taobao.com/*", "https://detail.tmall.com/*", "https://*.detail.tmall.com/*" ]
     }
   ],
   "description": "Convert Taobao prices into any currency according to the current international exchange rate.",

@@ -1,7 +1,7 @@
 .taoconvert_pricebox_tag {
-    display: table;
+    /*display: table;*/
     border: 1px dashed black;
-    background: #6fcb6f;
+    background: rgb(201 255 118);
     font-size: 14px;
     padding: 5px 10px;
     font-weight: normal;
@@ -39,41 +39,48 @@
         color: black !important;
     }
 
-.tm-price-panel .taoconvert_pricebox_tag span {
-}
 
-.taoconvert_pricebox_tag.min {
-    display: inline-block;
-    border: 1px dashed black;
-    background: #6fcb6f;
-    font-size: 16px;
-    font-weight: normal;
-    padding: 1px 2px !important;
-    margin: 0;
-    border-radius: 2px;
-    margin-left: 1px !important;
-    transform: scale(0.85);
-}
-
-    .taoconvert_pricebox_tag.min i {
-        display: inline-block;
-        vertical-align: middle;
-        width: 18px;
-        height: 18px;
-        background-size: 18px;
-        padding-right: 6px;
-        background-position: left center;
+    .taoconvert_pricebox_tag.md {
+        padding: 2px;
+        margin: 2px;
+        /*line-height: 1;*/
     }
 
-    .taoconvert_pricebox_tag.min span {
+        .taoconvert_pricebox_tag.md span {
+            font-size: 14px !important;
+        }
+
+    .taoconvert_pricebox_tag.sm {
         display: inline-block;
-        vertical-align: middle;
-        padding-right: 0;
-        font-size: 14px !important;
-        color: black !important;
+        border: 1px dashed black;
+        background: rgb(201 255 118);
+        font-size: 16px;
+        font-weight: normal;
+        padding: 2px 2px !important;
+        margin: 0px 0 2px 0 !important;
+        border-radius: 2px;
+        transform: scale(0.85);
     }
+
+        .taoconvert_pricebox_tag.sm i {
+            display: inline-block;
+            vertical-align: middle;
+            width: 18px;
+            height: 18px;
+            background-size: 18px;
+            padding-right: 6px;
+            background-position: left center;
+        }
+
+        .taoconvert_pricebox_tag.sm span {
+            display: inline-block;
+            vertical-align: middle;
+            padding-right: 0;
+            font-size: 16px !important;
+            color: black !important;
+        }
 
 .taoconvert_pricebox_container span, .taoconvert_pricebox_container strong {
-    display: inline-block;
+    /*display: inline-block;*/
     vertical-align: middle;
 }

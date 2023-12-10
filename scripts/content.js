@@ -57,20 +57,24 @@ const currencyApi = new CurrencyAPI();
 
 class MutationObserverManager {
     constructor() {
-        this.config = { mode: '', mutatedTargetChildNode: '', subtree: '' };
+        this.config = { mode: '', mutatedTargetChildNode: '', mutatedTargetParentNode: '', subtree: false };
         this.foundTargetNode = ''
-        this.targetSelector
+        this.mutatedTargetParentNode = null
+        this.mutatedTargetChildNode = null
+        this.subtree = false
     }
 
-    startObserver(targetSelector, callback) {
-        const { mode, mutatedTargetChildNode, subtree } = this.config;
+    startObserver(callback) {
+        const { mode, mutatedTargetChildNode, mutatedTargetParentNode, subtree } = this.config;
 
-        let targetElement = document.querySelector(targetSelector)
+        let targetElement = document.querySelector(mutatedTargetParentNode)
         if (targetElement) {
-            this.targetSelector = targetElement
-        } else throw Error(`Element with selector '${targetSelector}' not found.`);
+            this.mutatedTargetParentNode = targetElement
+            this.mutatedTargetChildNode = mutatedTargetChildNode
+            this.subtree = subtree
+        } else throw Error(`Element with selector '${mutatedTargetParentNode}' not found.`);
 
-        console.log(targetSelector, mode, mutatedTargetChildNode)
+        console.log(`parent: ${mutatedTargetParentNode}, mode: ${mode}, mutatedChild: ${mutatedTargetChildNode}`)
 
         if (!mode || !mutatedTargetChildNode) {
             console.error('Config for mutationObserverManager is empty. Please provide valid configuration.');
@@ -130,7 +134,7 @@ class MutationObserverManager {
         if (this.foundTargetNode) {
             callback()
         }
-        observer.observe(this.targetSelector, { childList: true });
+        observer.observe(this.mutatedTargetParentNode, { childList: true, subtree: this.subtree });
     }
 }
 
@@ -174,14 +178,65 @@ async function getCurrencyRate() {
 
 }
 
+class sharedUtilities {
+    constructor() {
+
+    }
+
+    /**
+     * Find element / dom entities by class name or the tag
+     * @param {string} element The iteration object from querySelectorAll
+     * @param {any} class_name class name u want to look for
+     * @param {any} element_tag the tag u want to look for, example <div> <p>
+     * @returns
+     */
+    findElementbyClassName(element, class_name, element_tag) {
+        let lowerCaseClassName = class_name.toLowerCase();
+        element_tag = element_tag || '*';
+
+        while (element && element.tagName !== 'HTML') {
+            const matchingElement = Array.from(element.getElementsByTagName(element_tag)).find(el => {
+                return typeof el.className === 'string' && el.className.toLowerCase().includes(lowerCaseClassName);
+            });
+
+            if (matchingElement) {
+                return matchingElement;
+            }
+
+            element = element.parentNode;
+        }
+
+        return null; // Return null if no matching element is found in the ancestors
+    }
+
+
+
+    createPriceBox(item_price_element, class_name) {
+        const item_price = item_price_element.textContent
+
+        if (item_price.includes("-")) {
+            const original_price_arr = item_price.split("-");
+            const new_price_tag = `<div class="${class_name}"><i></i><span>≈ ${(parseFloat(original_price_arr[0].substring(1)) * currency_rate).toFixed(2)} - ${(parseFloat(original_price_arr[1]) * currency_rate).toFixed(2)} ${currency_change}</span></div>`;
+            item_price_element.lastElementChild.insertAdjacentHTML('afterend', new_price_tag);
+        } else {
+            const originalPrice = parseFloat(item_price.substring(1));
+            const converted_price = (originalPrice * currency_rate).toFixed(2);
+            const newPriceTagHtml = `<div class="${class_name}"><i></i><span>≈ ${converted_price} ${currency_change}</span></div>`;
+            item_price_element.lastElementChild.insertAdjacentHTML('afterend', newPriceTagHtml);
+        }
+    }
+}
+
+const sharedUtility = new sharedUtilities()
+
 /////////////////////////////////////[https://world.taobao.com/]/////////////////////////////////////
 //effect only content in taobao home page
 if (location.href.includes("https://world.taobao.com/")) {
     let lastProcessedIndex = 0; // Variable to keep track of the last processed index
 
     window.onload = (event) => {
-        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: 'list' }
-        mutObserverManager.startObserver('.item-feed .list', addConversionPrice);
+        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: 'list', mutatedTargetParentNode: '.item-feed .list' }
+        mutObserverManager.startObserver(addConversionPrice);
         addConversionPrice();
     };
 
@@ -225,12 +280,12 @@ if (location.href.includes("https://s.taobao.com/")) {
     let adsPageDivToObserve = '[class*="templet"]'
 
     window.onload = (event) => {
-        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: "contentInner" }
-        mutObserverManager.startObserver(searchResultPageDivToObserve, changeTaobaoSearchResultPagePriceTag)
+        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: "contentInner", mutatedTargetParentNode: searchResultPageDivToObserve }
+        mutObserverManager.startObserver(changeTaobaoSearchResultPagePriceTag)
 
         adsObserverManager = new MutationObserverManager();
-        adsObserverManager.config = { mode: 'removedNode', mutatedTargetChildNode: "templet" }
-        adsObserverManager.startObserver(adsPageDivToObserve, changeTaobaoSearchResultPageAdsPriceTag)
+        adsObserverManager.config = { mode: 'removedNode', mutatedTargetChildNode: "templet", mutatedTargetParentNode: adsPageDivToObserve }
+        adsObserverManager.startObserver(changeTaobaoSearchResultPageAdsPriceTag)
 
         changeTaobaoSearchResultPageAdsPriceTag()
         changeTaobaoSearchResultPagePriceTag()
@@ -241,10 +296,10 @@ if (location.href.includes("https://s.taobao.com/")) {
 
         for (let price_wrapper_element of price_wrapper_elements) {
             // get Price int and float using more generic selectors
-            let price_int_element = findElementbyClassName(price_wrapper_element, 'priceInt')
+            let price_int_element = sharedUtility.findElementbyClassName(price_wrapper_element, 'priceInt')
             if (!price_int_element) console.log('no element');
 
-            let price_float_element = findElementbyClassName(price_wrapper_element, 'priceFloat')
+            let price_float_element = sharedUtility.findElementbyClassName(price_wrapper_element, 'priceFloat')
             if (!price_float_element) console.log('no element');
 
             // Extract the text content of priceInt and priceFloat elements
@@ -262,13 +317,14 @@ if (location.href.includes("https://s.taobao.com/")) {
 
                 price_int_element.style.fontSize = "17px"
                 price_float_element.style.fontSize = "17px"
-                price_wrapper_element.style.height = "40px"
+                price_wrapper_element.style.height = "44px"
+                price_wrapper_element.style['align-items'] = "flex-start"
 
-                let priceSalesSpan = findElementbyClassName(price_wrapper_element, 'realSales')
+                let priceSalesSpan = sharedUtility.findElementbyClassName(price_wrapper_element, 'realSales')
                 priceSalesSpan.style["line-height"] = "20px"
 
                 price_wrapper_element.classList.add('taoconvert_pricebox_container')
-                price_float_element.insertAdjacentHTML('afterend', '<div class="taoconvert_pricebox_tag min"><i></i><span> ≈ ' + converted_price + ' ' + currency_change + '</span></div>');
+                price_float_element.insertAdjacentHTML('afterend', '<div class="taoconvert_pricebox_tag sm"><i></i><span> ≈ ' + converted_price + ' ' + currency_change + '</span></div>');
 
             }
         }
@@ -279,7 +335,9 @@ if (location.href.includes("https://s.taobao.com/")) {
         let ads_price_wrapper = document.querySelectorAll('.templet ul li');
 
         for (let item of ads_price_wrapper) {
-            let ad_price_element = findElementbyClassName(item, 'price', 'a')
+            const ad_price_element = sharedUtility.findElementbyClassName(item, 'price', 'a')
+            const ad_price_wrapper_element = sharedUtility.findElementbyClassName(item, 'line1', 'div')
+
             if (!ad_price_element) {
                 console.error(`ad_price_element not found`);
                 break;
@@ -296,39 +354,16 @@ if (location.href.includes("https://s.taobao.com/")) {
                 original_ad_price = matches ? parseFloat(matches[0]) : NaN;
 
                 let converted_price = (original_ad_price * currency_rate).toFixed(2);
-
-                // Define a CSS object with multiple properties
-                var cssObject = {
-                    "font-size": "15px"
-                };
-
-                // Use Object.assign to merge the style object with existing styles
-                Object.assign(ad_price_element.style, cssObject);
+                ad_price_element.style["font-size"] = '15px'
+                ad_price_wrapper_element.style["height"] = '23px'
 
                 ad_price_element.classList.add('taoconvert_pricebox_container')
-                ad_price_element.innerHTML += '<div class="taoconvert_pricebox_tag min"><i></i><span> ≈ ' + converted_price + ' ' + currency_change + '</span></div>';
+                ad_price_element.innerHTML += '<div class="taoconvert_pricebox_tag sm"><i></i><span> ≈ ' + converted_price + ' ' + currency_change + '</span></div>';
 
             }
         }
 
 
-    }
-
-    /**
-     * Find element / dom entities by class name or the tag
-     * @param {string} element The iteration object from querySelectorAll
-     * @param {any} class_name class name u want to look for
-     * @param {any} element_tag the tag u want to look for, example <div> <p>
-     * @returns
-     */
-    function findElementbyClassName(element, class_name, element_tag) {
-        let lowerCaseClassName = class_name.toLowerCase();
-
-        element_tag = element_tag || '*'; // Use '*' if element_tag is not provided
-
-        return Array.from(element.getElementsByTagName(element_tag)).find(
-            el => el.className.toLowerCase().includes(lowerCaseClassName)
-        );
     }
 }
 
@@ -339,26 +374,22 @@ if (location.href.includes("https://item.taobao.com/")) {
     const itemPageDivToObserve = "#J_StrPrice .tb-rmb-num"
 
     window.onload = () => {
-        mutObserverManager.config = { mode: 'removedText', mutatedTargetChildNode: "tb-rmb-num" }
-        searchResultPageObserverIndex = mutObserverManager.startObserver(itemPageDivToObserve, changeTaobaoItemPagePriceTag)
+        mutObserverManager.config = { mode: 'removedText', mutatedTargetChildNode: "tb-rmb-num", mutatedTargetParentNode: itemPageDivToObserve }
+        searchResultPageObserverIndex = mutObserverManager.startObserver(changeTaobaoItemPagePriceTag)
         changeTaobaoItemPagePriceTag()
     }
 
     function changeTaobaoItemPagePriceTag() {
-        const item_price_element = document.getElementById('J_StrPrice') || document.querySelector('strong.tb-promo-price');
-        const item_price = item_price_element.textContent
 
-        if (item_price.includes("-")) {
-            const original_price_arr = item_price.split("-");
-            const new_price_tag = `<div class="taoconvert_pricebox_tag"><i></i><span>≈ ${(parseFloat(original_price_arr[0].substring(1)) * currency_rate).toFixed(2)} - ${(parseFloat(original_price_arr[1]) * currency_rate).toFixed(2)} ${currency_change}</span></div>`;
-            item_price_element.lastElementChild.insertAdjacentHTML('afterend', new_price_tag);
-        } else {
-            const originalPrice = parseFloat(item_price.substring(1));
-            const converted_price = (originalPrice * currency_rate).toFixed(2);
-            const newPriceTagHtml = `<div class="taoconvert_pricebox_tag"><i></i><span>≈ ${converted_price} ${currency_change}</span></div>`;
-            item_price_element.lastElementChild.insertAdjacentHTML('afterend', newPriceTagHtml);
-        }
 
+        const promo_price_element = document.querySelector('strong.tb-promo-price')
+        const original_price_element = document.getElementById('J_StrPrice')
+
+        if (promo_price_element) {
+            sharedUtility.createPriceBox(promo_price_element, "taoconvert_pricebox_tag")
+            sharedUtility.createPriceBox(original_price_element, "taoconvert_pricebox_tag md")
+        } else
+            sharedUtility.createPriceBox(original_price_element, "taoconvert_pricebox_tag lg")
     }
 }
 
@@ -369,25 +400,66 @@ const urlPattern = /^https?:\/\/(.*\.)?detail\.tmall\.com/;
 
 if (urlPattern.test(location.href)) {
     //if this component load start the script
-    const TmallPageDivToObserve = "div[class*='originPrice']"
+    const TmallPageDivToObserve = "[class*='originPrice']"
 
-    window.onload = () => {
-        mutObserverManager.config = { mode: 'removedText', mutatedTargetChildNode: "[class*='priceText']", subtree: true }
-        searchResultPageObserverIndex = mutObserverManager.startObserver(TmallPageDivToObserve, changeTmallPagePriceTag)
+    window.onload = async () => {
+        await timer(3000)
+        mutObserverManager.config = { mode: 'removedText', mutatedTargetChildNode: "[class*='priceText']", mutatedTargetParentNode: TmallPageDivToObserve, subtree: true }
+        searchResultPageObserverIndex = mutObserverManager.startObserver(changeTmallPagePriceTag)
         changeTmallPagePriceTag()
     }
 
     function changeTmallPagePriceTag() {
+        let tmall_price_elements = document.querySelectorAll("[class^='Price--priceText']")
+        let tmall_discounted_price_element;
+        let tmall_original_price_element;
 
-        const tmall_price_element = document.querySelector("[class*='priceText']")
-        const tmall_price = tmall_price_element.textContent
+        Array.from(tmall_price_elements).forEach(el => {
+            const discountedPriceElement = sharedUtility.findElementbyClassName(el, "extraPrice");
+            const originalPriceElement = sharedUtility.findElementbyClassName(el, "originPrice");
 
-        const converted_price = (parseFloat(tmall_price) * currency_rate).toFixed(2);
-        const newPriceTagHtml = `<div class="taoconvert_pricebox_tag"><i></i><span>≈ ${converted_price} ${currency_change}</span></div>`;
+            if (discountedPriceElement) {
+                tmall_discounted_price_element = discountedPriceElement;
+            }
 
-        const parent_tmall_price_element = tmall_price_element.parentNode
+            if (originalPriceElement) {
+                tmall_original_price_element = originalPriceElement;
+            }
+        });
 
-        parent_tmall_price_element.style["margin-right"] = '10px'
-        parent_tmall_price_element.insertAdjacentHTML('afterend', newPriceTagHtml);
+
+        if (tmall_discounted_price_element) {
+            let tmall_price = tmall_discounted_price_element.textContent
+            const converted_price = (parseFloat(tmall_price) * currency_rate).toFixed(2);
+            const newPriceTagHtml = `<div class="taoconvert_pricebox_tag"><i></i><span>≈ ${converted_price} ${currency_change}</span></div>`;
+
+            const salePriceRelativeWrapElement = tmall_discounted_price_element.closest('[class^="Price--sale--"]')
+            salePriceRelativeWrapElement.style["margin-bottom"] = '10px'
+
+            salePriceRelativeWrapElement.insertAdjacentHTML('afterend', newPriceTagHtml);
+
+        } else {
+            let tmall_price = tmall_original_price_element.textContent
+            // Use a regular expression to match numbers with or without a decimal point
+            var matches = tmall_price.match(/\d+(\.\d+)?|\.\d+/);
+
+            // Check if there are matches and extract the first one
+            tmall_price = matches ? parseFloat(matches[0]) : NaN;
+            const converted_price = (tmall_price * currency_rate).toFixed(2);
+            const newPriceTagHtml = `<div class="taoconvert_pricebox_tag"><i></i><span>≈ ${converted_price} ${currency_change}</span></div>`;
+            tmall_original_price_element.style["margin-right"] = '10px'
+
+
+            //let salePriceRelativeWrapElement = tmall_original_price_element.closest('[class*="salePriceRelativeWrap"]')
+            let priceSaleParentElement = tmall_original_price_element.closest('[class^="Price--sale--"]')
+            let normalPriceWrapParentElement = tmall_original_price_element.closest('[class^="Price--priceWrap--"]')
+
+            let selectedWrapperElement = priceSaleParentElement ? priceSaleParentElement : normalPriceWrapParentElement
+
+            selectedWrapperElement.style["margin-bottom"] = '10px'
+            selectedWrapperElement.insertAdjacentHTML('afterend', newPriceTagHtml);
+
+        }
+
     }
 }

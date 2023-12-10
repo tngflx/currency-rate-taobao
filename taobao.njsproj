@@ -31,7 +31,6 @@
     <Content Include="resources\icon-48.png" />
     <Content Include="resources\currency_data.json" />
     <Content Include="scripts\content.js" />
-    <Content Include="scripts\jquery.js" />
     <Content Include="scripts\popup.js" />
     <Content Include="scripts\testapi.js" />
     <Content Include="old files\resources\common_old.css" />
@@ -54,7 +53,6 @@
     <Folder Include="old files\scripts" />
     <Folder Include="resources" />
     <Folder Include="scripts" />
-    <Folder Include="taobao" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
