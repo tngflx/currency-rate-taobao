@@ -256,14 +256,12 @@ if (location.href.includes("https://world.taobao.com/")) {
     let lastProcessedIndex = 0; // Variable to keep track of the last processed index
 
     window.onload = (event) => {
-        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: 'list', mutatedTargetParentNode: '.item-feed .list' }
+        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: 'item', mutatedTargetParentNode: '.item-feed .list' }
         mutObserverManager.startObserver(addConversionPrice);
         addConversionPrice();
     };
 
     function addConversionPrice() {
-        sharedUtility.removeTrailingTaoConvPricebox()
-
         let price_elements = document.querySelectorAll(".price-text");
 
         for (let [index, item] of price_elements.entries()) {
