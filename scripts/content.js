@@ -100,10 +100,10 @@ class MutationObserverManager {
                 case 'removedNode':
                     this.foundTargetNode = mutationsList.some(mutation =>
                         mutation.type === 'childList' &&
-                        Array.from(mutation.removedNodes).some(node => {
-                            const man = node.classList.contains(mutatedTargetChildNode)
-                            node.classList && man
-                        })
+                        Array.from(mutation.removedNodes).some(node =>
+                            sharedUtility.checkClassNameInChildEl(node, mutatedTargetChildNode)
+
+                        )
                     );
 
                     this.stopObserverBeforeDomChanges(observer, callback)
@@ -132,7 +132,6 @@ class MutationObserverManager {
 
     stopObserverBeforeDomChanges(observer, callback) {
         observer.disconnect()
-        //document.querySelectorAll('.taoconvert_pricebox_tag').forEach(tag => tag.remove());
 
         if (this.foundTargetNode) {
             callback()
@@ -212,14 +211,14 @@ class sharedUtilities {
         return null; // Return null if no matching element is found in the ancestors
     }
 
-    checkClassNameInChildEl(node, className) {
-        if (node.className && typeof node.className === 'string' && node.className.includes(className)) {
+    checkClassNameInChildEl(element, class_name) {
+        if (element.className && typeof element.className === 'string' && element.className.includes(class_name)) {
             return true;
         }
 
-        if (node.childNodes.length > 0) {
-            return Array.from(node.childNodes).some(child =>
-                child.nodeType === 1 && this.checkClassNameInChildEl(child, className)
+        if (element.childNodes.length > 0) {
+            return Array.from(element.childNodes).some(child =>
+                child.nodeType === 1 && this.checkClassNameInChildEl(child, class_name)
             );
         }
 
@@ -234,11 +233,18 @@ class sharedUtilities {
             const new_price_tag = `<div class="${class_name}"><i></i><span>≈ ${(parseFloat(original_price_arr[0].substring(1)) * currency_rate).toFixed(2)} - ${(parseFloat(original_price_arr[1]) * currency_rate).toFixed(2)} ${currency_change}</span></div>`;
             item_price_element.lastElementChild.insertAdjacentHTML('afterend', new_price_tag);
         } else {
-            const originalPrice = parseFloat(item_price.substring(1));
-            const converted_price = (originalPrice * currency_rate).toFixed(2);
+            const original_price = parseFloat(item_price.substring(1));
+            const converted_price = (original_price * currency_rate).toFixed(2);
             const newPriceTagHtml = `<div class="${class_name}"><i></i><span>≈ ${converted_price} ${currency_change}</span></div>`;
             item_price_element.lastElementChild.insertAdjacentHTML('afterend', newPriceTagHtml);
         }
+    }
+
+    removeTrailingTaoConvPricebox(parentNode) {
+        const target_selector = parentNode ? `${parentNode} .taoconvert_pricebox_tag` : '.taoconvert_pricebox_tag'
+        const trailing_taoconv_pricebox = document.querySelectorAll(target_selector)
+        if (trailing_taoconv_pricebox.length > 0)
+            trailing_taoconv_pricebox.forEach(tag => tag.remove())
     }
 }
 
@@ -250,7 +256,7 @@ if (location.href.includes("https://world.taobao.com/")) {
     let lastProcessedIndex = 0; // Variable to keep track of the last processed index
 
     window.onload = (event) => {
-        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: 'list', mutatedTargetParentNode: '.item-feed .list' }
+        mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: 'item', mutatedTargetParentNode: '.item-feed .list' }
         mutObserverManager.startObserver(addConversionPrice);
         addConversionPrice();
     };
@@ -289,24 +295,27 @@ if (location.href.includes("https://world.taobao.com/")) {
 /////////////////////////////////////[https://s.taobao.com/]/////////////////////////////////////
 //effect only in taobao search page
 if (location.href.includes("https://s.taobao.com/")) {
-    let adsObserverManager;
+    let RightAdsObserverManager;
+    let BottomAdsObserverManager;
 
     let searchResultPageDivToObserve = 'div[class*="leftContent"] div[class*="contentInner"]'
-    let adsPageDivToObserve = '[class*="templet"]'
+    let RightAdsPageDivToObserve = 'div[class^="RightLay--rightWrap"] [class*="templet"]'
+    let BottomAdsPageDivToObserve = 'div[class^="BottomLay--bottomWrap"] [class*="templet"]'
 
     window.onload = (event) => {
         mutObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: "doubleCardWrapper", mutatedTargetParentNode: searchResultPageDivToObserve }
         mutObserverManager.startObserver(changeTaobaoSearchResultPagePriceTag)
 
-        adsObserverManager = new MutationObserverManager();
-        adsObserverManager.config = { mode: 'removedNode', mutatedTargetChildNode: "templet", mutatedTargetParentNode: adsPageDivToObserve }
-        adsObserverManager.startObserver(changeTaobaoSearchResultPageAdsPriceTag)
+        // Bottom ads load the last, so need different observer for it even though shares the same div structure and elements
+        BottomAdsObserverManager = new MutationObserverManager()
+        BottomAdsObserverManager.config = { mode: 'addedNode', mutatedTargetChildNode: "line1", mutatedTargetParentNode: BottomAdsPageDivToObserve }
+        BottomAdsObserverManager.startObserver(changeTaobaoSearchResultPageAdsPriceTag)
 
         changeTaobaoSearchResultPageAdsPriceTag()
         changeTaobaoSearchResultPagePriceTag()
     }
 
-    function changeTaobaoSearchResultPagePriceTag() {
+    async function changeTaobaoSearchResultPagePriceTag() {
         let price_wrapper_elements = document.querySelectorAll('[class*="priceWrapper"]');
 
         for (let price_wrapper_element of price_wrapper_elements) {
@@ -347,7 +356,10 @@ if (location.href.includes("https://s.taobao.com/")) {
     }
 
     function changeTaobaoSearchResultPageAdsPriceTag() {
-        let ads_price_wrapper = document.querySelectorAll('.templet ul li');
+        let ads_price_wrapper = document.querySelectorAll('.templet ul.item-list li.item');
+
+        // As bottom ads is the last to load, right ads will be rendered first with pricebox, remove it then reprocess with last call
+        sharedUtility.removeTrailingTaoConvPricebox(RightAdsPageDivToObserve)
 
         for (let item of ads_price_wrapper) {
             const ad_price_element = sharedUtility.findParentElbyClassName(item, 'price', 'a')
@@ -356,9 +368,7 @@ if (location.href.includes("https://s.taobao.com/")) {
             if (!ad_price_element) {
                 console.error(`ad_price_element not found`);
                 break;
-            }
-
-            if (ad_price_element) {
+            } else if (ad_price_element) {
 
                 let original_ad_price = ad_price_element.textContent
 
@@ -395,7 +405,7 @@ if (location.href.includes("https://item.taobao.com/")) {
     }
 
     function changeTaobaoItemPagePriceTag() {
-
+        sharedUtility.removeTrailingTaoConvPricebox()
 
         const promo_price_element = document.querySelector('strong.tb-promo-price')
         const original_price_element = document.getElementById('J_StrPrice')
@@ -417,14 +427,15 @@ if (urlPattern.test(location.href)) {
     //if this component load start the script
     const TmallPageDivToObserve = "[class*='originPrice']"
 
-    window.onload = async () => {
-        await timer(3000)
+    window.onload = () => {
         mutObserverManager.config = { mode: 'removedText', mutatedTargetChildNode: "[class*='priceText']", mutatedTargetParentNode: TmallPageDivToObserve, subtree: true }
         searchResultPageObserverIndex = mutObserverManager.startObserver(changeTmallPagePriceTag)
         changeTmallPagePriceTag()
     }
 
     function changeTmallPagePriceTag() {
+        sharedUtility.removeTrailingTaoConvPricebox()
+
         let tmall_price_elements = document.querySelectorAll("[class^='Price--priceText']")
         let tmall_discounted_price_element;
         let tmall_original_price_element;
